@@ -1,16 +1,18 @@
-from prediction.decode import decode
+from utils.decode import decode
 import torch
 from torch.nn.functional import ctc_loss, log_softmax
 from rapidfuzz.distance import Levenshtein
 
 import numpy as np 
+import pandas as pd
 
 from tqdm import tqdm
 import wandb
 import gc
+import os
 
 
-def eval_model(model, config, val_dataloader):
+def eval_model(model, config, val_dataloader, test=False, log=True):
     model.eval()
     val_losses = []
     epoch_metrics = []
@@ -26,8 +28,8 @@ def eval_model(model, config, val_dataloader):
         seqs_decoded = decode(seqs_pred)
         epoch_metrics.append(Levenshtein.distance(seqs_decoded, b["text"]))
 
-        if config['return_preds']:
-            prediciton.append(seqs_decoded)
+        if test:
+            prediciton.extend(seqs_decoded)
         
         log_probs = log_softmax(seqs_pred, dim=2)
         seq_lens_pred = torch.Tensor([seqs_pred.size(0)] * seqs_pred.size(1)).int()
@@ -44,15 +46,20 @@ def eval_model(model, config, val_dataloader):
         gc.collect()
         torch.cuda.empty_cache()
 
-    val_loss = np.mean(val_losses)
-    val_metrics = np.mean(epoch_metrics)
+    val_loss = round(np.mean(val_losses), 3)
+    val_metrics = round(np.mean(epoch_metrics), 3)
 
-    print('VALIDATION Loss: ', val_loss, 'metrics: ', val_metrics)
-    wandb.log({"VALIDATION loss": val_loss, "VALIDATION metrics": val_metrics}) 
+    print('VALIDATION Loss: ', val_loss, 'metrics: ', val_metrics, '\n')
+    if log:
+        wandb.log({"VALIDATION loss": val_loss, "VALIDATION metrics": val_metrics}) 
 
 
-    if config['return_preds']:
-        return prediciton
+    if test:
+        filename=config['name']
+
+        submition = pd.read_csv('data/submission.csv')
+        submition['label'] = prediciton
+        submition.to_csv(f'results/{filename}.csv', index=False)
 
 if __name__ == '__main__':
     print('Everything is ready!')
