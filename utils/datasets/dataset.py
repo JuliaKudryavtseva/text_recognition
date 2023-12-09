@@ -16,7 +16,7 @@ abc = "0123456789ABEKMHOPCTYX"
 class TextRecognitionDataset(Dataset):
     """Class for training image-to-text mapping using CTC-Loss."""
 
-    def __init__(self, phase, root='./data',  alphabet=abc, transform=None, preprocessing=None):
+    def __init__(self, phase, config=None, root='./data',  alphabet=abc, transform=None, preprocessing=None):
         """Constructor for class.
         
         Args:
@@ -29,6 +29,7 @@ class TextRecognitionDataset(Dataset):
         super(TextRecognitionDataset, self).__init__()
 
         self.transform = transform
+        self.config=config
         self.phase = phase
         self.root = root
         self.alphabet = alphabet
@@ -53,10 +54,7 @@ class TextRecognitionDataset(Dataset):
 
 
         if self.phase == 'train':
-            if image in self.simple:
-                image_path = os.path.join(self.image_path_simple, image)    # train simple phase
-            else:
-                image_path = os.path.join(self.image_path_complex, image)   # train complex phase
+            image_path = os.path.join(self.config[image])                           # train simple phase
         else: 
             image_path = os.path.join(self.image_path, image)               # test phase
 
@@ -97,13 +95,8 @@ class TextRecognitionDataset(Dataset):
     def _parse_path(self):
 
         if self.phase == 'train':
-            self.image_path_simple = os.path.join(self.root, self.phase, self.phase, 'simple')
-            self.image_path_complex = os.path.join(self.root, self.phase, self.phase, 'complex')
 
-            self.simple = os.listdir(self.image_path_simple)
-            self.complex = os.listdir(self.image_path_complex)
-
-            self.all_images = self.simple + self.complex 
+            self.all_images = list(self.config.keys())
             self.image2label = {label: label.split('.')[0].split('_')[-1] for label in self.all_images}
 
         elif self.phase == 'test':
@@ -114,6 +107,37 @@ class TextRecognitionDataset(Dataset):
         else:
             raise ValueError('Wrong name for phase: choose "train" or "test"')  
 
+
+
+def get_dataconfig(train_ratio, list_examples, path):
+    treshold = int(train_ratio * len(list_examples))
+    train = list_examples[:treshold]
+    val = list_examples[treshold:]
+
+    train_config = {label: os.path.join(path, label) for label in train}
+    val_config = {label: os.path.join(path, label) for label in val}
+
+    return train_config, val_config
+
+
+def get_train_val(ratio, root='data'):
+    train_path = os.path.join(root, 'train', 'train')
+
+    complex_path = os.path.join(train_path, 'complex')
+    simple_path = os.path.join(train_path, 'simple')
+
+
+    complex_images = os.listdir(complex_path)
+    simple_images = os.listdir(simple_path)
+
+
+    train_simple, val_simple = get_dataconfig(0.7, simple_images, simple_path)
+    train_complex, val_complex = get_dataconfig(0.7, complex_images, complex_path)
+
+    train_config = dict(list(train_simple.items()) + list(train_complex.items()))
+    val_config = dict(list(val_simple.items()) + list(val_complex.items()))
+
+    return train_config, val_config
 
 
 
@@ -173,32 +197,33 @@ def collate_fn(batch):
 
 
 
-
-# defualt_transform = v2.Compose([
-#                         v2.Resize((32, 160)), 
-#                         v2.ToTensor(),
-#                         v2.Normalize((0.1307,), (0.3081,))])
 defualt_transform = Resize(size=(320, 64))
 
 
-def get_dataloaders(BATCH_SIZE=16, preprcoessing=False, transform=defualt_transform):
+def get_dataloaders(BATCH_SIZE=16, train_ratio=0.7, preprcoessing=False, transform=defualt_transform, root='data'):
     if preprcoessing:
         preprocessing_fun = ada_thr
     else:
         preprocessing_fun = None
 
-    train_set = TextRecognitionDataset('train', preprocessing=preprocessing_fun, transform=transform)
+    train_config, val_config = get_train_val(train_ratio)
+
+    train_set = TextRecognitionDataset('train', config=train_config, preprocessing=preprocessing_fun, transform=transform)
+    val_set = TextRecognitionDataset('train', config=val_config, preprocessing=preprocessing_fun, transform=transform)
     test_set = TextRecognitionDataset('test', preprocessing=preprocessing_fun, transform=transform)
 
     train = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, drop_last=True, collate_fn=collate_fn)
+    val = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=False, collate_fn=collate_fn)
     test = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=False, collate_fn=collate_fn)
 
-    return train, test
+    return train, val, test
 
 
 
 if __name__ == '__main__':    
-    train_dataloader, test_dataloader = get_dataloaders() 
+    BATCH_SIZE=16
+    print(f'{BATCH_SIZE=}')
+    train_dataloader, val_dataloader, test_dataloader = get_dataloaders(BATCH_SIZE=BATCH_SIZE) 
         
     for batch in train_dataloader:
         print('TRAIN')
@@ -207,7 +232,7 @@ if __name__ == '__main__':
         print('seq_len', batch['seq_len'])
         print('text', batch['text'])
         print()
-        # break
+        break
 
     for batch in test_dataloader:
         print('TEST')
@@ -216,4 +241,4 @@ if __name__ == '__main__':
         print('seq_len', batch['seq_len'])
         print('tresh', batch['text'])
         print()
-        # break
+        break
