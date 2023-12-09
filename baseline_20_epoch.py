@@ -14,14 +14,13 @@ warnings.filterwarnings('ignore')
 config = {
     'name'      : 'baseline',
 
-
-    'num_epochs': 20,
+    'num_epochs': 13,
     'batch_size': 16,
     'device'    : 'cuda:0',
 
     'checkpoint': False,
     'save_path' : 'checkpoints',
-    'log'       : True,
+    'log'       : False,
 
     'weight_decay': 1e-3
 }
