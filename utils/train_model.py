@@ -99,8 +99,6 @@ def save_checkpoint(model, optimizer, filename, EPOCH):
             
 
 def load_checkpoint(model, filename, optimizer=None):
-    loaded_checkpoint = {}
-
     with open(filename, "rb") as fp:
         checkpoint = torch.load(fp, map_location="cpu")
         model.load_state_dict(checkpoint['model_state_dict'])
