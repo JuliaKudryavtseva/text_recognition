@@ -1,5 +1,3 @@
-from prediction.decode import decode
-
 from torch.nn            import Module, Sequential, Conv2d, AvgPool2d, GRU, Linear
 from torchvision         import models
 import torch
@@ -127,7 +125,4 @@ if __name__ == '__main__':
     x = torch.randn(2, 3, 64, 320)
     y = crnn(x)
     assert y.size() == (20, 2, 23)
-
-    results = decode(y)
-    print(f'{results=}: {len(results[0])}')
     print('Pipeline CRNN is ready!')
