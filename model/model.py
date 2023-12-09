@@ -9,11 +9,13 @@ abc = "0123456789ABEKMHOPCTYX"
 
 class FeatureExtractor(Module):
     
-    def __init__(self, input_size=(64, 320), output_len=20):
+    def __init__(self, backbone, input_size=(64, 320), output_len=20):
         super(FeatureExtractor, self).__init__()
         
         h, w = input_size
-        resnet = getattr(models, 'resnet18')(pretrained=True)
+        resnet = getattr(models, backbone)(pretrained=True)
+        print('load backbone: ', backbone)
+        
         self.cnn = Sequential(*list(resnet.children())[:-2])
         
         self.pool = AvgPool2d(kernel_size=(h // 32, 1))        
@@ -98,12 +100,13 @@ class SequencePredictor(Module):
 
 class CRNN(Module):
     
-    def __init__(self, alphabet=abc,
+    def __init__(self, backbone='resnet18', alphabet=abc,
                  cnn_input_size=(64, 320), cnn_output_len=20,
                  rnn_hidden_size=128, rnn_num_layers=2, rnn_dropout=0.3, rnn_bidirectional=False):
         super(CRNN, self).__init__()
         self.alphabet = alphabet
         self.features_extractor = FeatureExtractor(
+            backbone=backbone,
             input_size=cnn_input_size, output_len=cnn_output_len
         )
         self.sequence_predictor = SequencePredictor(
