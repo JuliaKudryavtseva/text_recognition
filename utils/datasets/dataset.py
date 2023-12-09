@@ -207,7 +207,7 @@ if __name__ == '__main__':
         print('seq_len', batch['seq_len'])
         print('text', batch['text'])
         print()
-        break
+        # break
 
     for batch in test_dataloader:
         print('TEST')
@@ -216,4 +216,4 @@ if __name__ == '__main__':
         print('seq_len', batch['seq_len'])
         print('tresh', batch['text'])
         print()
-        break
+        # break
