@@ -61,5 +61,8 @@ def eval_model(model, config, val_dataloader, test=False, log=True):
         submition['label'] = prediciton
         submition.to_csv(f'results/{filename}.csv', index=False)
 
+    else:
+        return val_loss, val_metrics
+
 if __name__ == '__main__':
     print('Everything is ready!')
