@@ -15,15 +15,16 @@ import os
 
 def training(model, config, train_dataloader, val_dataloader, optimizer, log=True):
     
-    epoch=0
+    start_epoch=0
     if config['checkpoint']:
         model, optimizer,  epoch = load_checkpoint(model, config['save_path'], optimizer)
 
 
     best_loss = np.inf
     best_metrics = np.inf
+    num_epoch = config['num_epochs']
 
-    for i, epoch in enumerate(range(config['num_epochs']), epoch):
+    for i, epoch in enumerate(range(num_epoch), start_epoch):
         model.train()
         start_time = time.time()
 
@@ -62,22 +63,26 @@ def training(model, config, train_dataloader, val_dataloader, optimizer, log=Tru
 
         epoch_loss = round(np.mean(epoch_losses), 3)
         epoch_metrics  = round(np.mean(epoch_metrics), 3)
-        
-        if epoch_metrics < best_metrics:
-            best_metrics = epoch_metrics
 
+        end_time = time.time()
+        epoch_time=round(end_time-start_time, 3)
+        
+        print(f'[{epoch}]/[{num_epoch}] | TRAIN: {epoch_loss=}, {epoch_metrics=}, time: {epoch_time}')
+        val_loss, val_metrics = eval_model(model, config, val_dataloader, test=False, log=log)
+
+        
+        if log:
+            wandb.log({"TRAIN loss": epoch_loss, "TRAIN metrics": epoch_metrics})
+
+
+        if val_metrics < best_metrics:
+            best_metrics = val_metrics
             name = config['name']
             name_checkpoint = f'{name}.pth'
             save_path = os.path.join(os.getcwd(), config['save_path'], name_checkpoint)
             save_checkpoint(model, optimizer, save_path, epoch)
 
-        end_time = time.time()
-        epoch_time=round(end_time-start_time, 3)
-        
-        print(f'TRAIN: {epoch_loss=}, {epoch_metrics=}, time: {epoch_time}')
-        eval_model(model, config, val_dataloader, test=False, log=log)
-        if log:
-            wandb.log({"TRAIN loss": epoch_loss, "TRAIN metrics": epoch_metrics})
+
 
 
     
