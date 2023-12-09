@@ -217,7 +217,7 @@ def get_dataloaders(BATCH_SIZE=16, train_ratio=0.9, preprcoessing=False, transfo
     test_set = TextRecognitionDataset('test', preprocessing=preprocessing_fun, transform=transform)
 
     train = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, drop_last=True, collate_fn=collate_fn)
-    val = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=False, collate_fn=collate_fn)
+    val = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=False, collate_fn=collate_fn)
     test = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False, drop_last=False, collate_fn=collate_fn)
 
     return train, val, test
@@ -228,6 +228,7 @@ if __name__ == '__main__':
     BATCH_SIZE=16
     print(f'{BATCH_SIZE=}')
     train_dataloader, val_dataloader, test_dataloader = get_dataloaders(BATCH_SIZE=BATCH_SIZE) 
+    print(len(train_dataloader), len(val_dataloader), len(test_dataloader))
         
     for batch in train_dataloader:
         print('TRAIN')
