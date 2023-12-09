@@ -1,5 +1,5 @@
-
-from prediction.decode import decode
+from utils.decode import decode
+from utils.validation import eval_model
 import torch
 from torch.nn.functional import ctc_loss, log_softmax
 from rapidfuzz.distance import Levenshtein
@@ -7,11 +7,13 @@ from rapidfuzz.distance import Levenshtein
 import numpy as np 
 
 from tqdm import tqdm
+import time
 import wandb
 import gc
+import os
 
 
-def training(model, config, train_dataloader, optimizer):
+def training(model, config, train_dataloader, val_dataloader, optimizer, log=True):
     
     epoch=0
     if config['checkpoint']:
@@ -21,8 +23,10 @@ def training(model, config, train_dataloader, optimizer):
     best_loss = np.inf
     best_metrics = np.inf
 
-    model.train()
     for i, epoch in enumerate(range(config['num_epochs']), epoch):
+        model.train()
+        start_time = time.time()
+
         epoch_losses = []
         epoch_metrics = []
 
@@ -56,16 +60,24 @@ def training(model, config, train_dataloader, optimizer):
             gc.collect()
             torch.cuda.empty_cache() 
 
-        avr_epoch_loss = np.mean(epoch_losses)
-        avr_epoch_metrics  = np.mean(epoch_metrics)
+        epoch_loss = round(np.mean(epoch_losses), 3)
+        epoch_metrics  = round(np.mean(epoch_metrics), 3)
         
-        if avr_epoch_metrics < best_metrics:
-            best_metrics = avr_epoch_metrics
-            save_checkpoint(model, optimizer, config['save_path'], epoch)
+        if epoch_metrics < best_metrics:
+            best_metrics = epoch_metrics
 
+            name = config['name']
+            name_checkpoint = f'{name}.pth'
+            save_path = os.path.join(os.getcwd(), config['save_path'], name_checkpoint)
+            save_checkpoint(model, optimizer, save_path, epoch)
+
+        end_time = time.time()
+        epoch_time=round(end_time-start_time, 3)
         
-        print(f'TRAIN: {avr_epoch_loss=}, {avr_epoch_metrics=}')
-        wandb.log({"TRAIN loss": avr_epoch_loss, "TRAIN metrics": avr_epoch_metrics})
+        print(f'TRAIN: {epoch_loss=}, {epoch_metrics=}, time: {epoch_time}')
+        eval_model(model, config, val_dataloader, test=False, log=log)
+        if log:
+            wandb.log({"TRAIN loss": epoch_loss, "TRAIN metrics": epoch_metrics})
 
 
     
