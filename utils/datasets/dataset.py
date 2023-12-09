@@ -40,7 +40,7 @@ class TextRecognitionDataset(Dataset):
 
         if phase=='train':
             assert len(self.config) == len(self.all_images)
-            print('Dataset size: ', len(self.config))
+            print('Dataset size: ', len(self.config))        
         
     def __getitem__(self, index):
         """Returns dict with keys "image", "seq", "seq_len" & "text".
@@ -105,8 +105,8 @@ class TextRecognitionDataset(Dataset):
 
         elif self.phase == 'test':
             self.image_path = os.path.join(self.root, self.phase, 'result')
-            self.all_images = os.listdir(self.image_path)
-            self.image2label = {label: label.split('.')[0].split('_')[-1] for label in self.all_images}
+            self.all_images = sorted(os.listdir(self.image_path), key=lambda x: int(x.split('.')[0]))
+            self.image2label = {label: label.split('.')[0] for label in self.all_images}
             
         else:
             raise ValueError('Wrong name for phase: choose "train" or "test"')  
