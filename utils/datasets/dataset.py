@@ -37,6 +37,10 @@ class TextRecognitionDataset(Dataset):
         self.preprocessing = preprocessing
 
         self._parse_path()
+
+        if phase=='train':
+            assert len(self.config) == len(self.all_images)
+            print('Dataset size: ', len(self.config))
         
     def __getitem__(self, index):
         """Returns dict with keys "image", "seq", "seq_len" & "text".
@@ -131,8 +135,8 @@ def get_train_val(ratio, root='data'):
     simple_images = os.listdir(simple_path)
 
 
-    train_simple, val_simple = get_dataconfig(0.7, simple_images, simple_path)
-    train_complex, val_complex = get_dataconfig(0.7, complex_images, complex_path)
+    train_simple, val_simple = get_dataconfig(ratio, simple_images, simple_path)
+    train_complex, val_complex = get_dataconfig(ratio, complex_images, complex_path)
 
     train_config = dict(list(train_simple.items()) + list(train_complex.items()))
     val_config = dict(list(val_simple.items()) + list(val_complex.items()))
@@ -200,14 +204,14 @@ def collate_fn(batch):
 defualt_transform = Resize(size=(320, 64))
 
 
-def get_dataloaders(BATCH_SIZE=16, train_ratio=0.7, preprcoessing=False, transform=defualt_transform, root='data'):
+def get_dataloaders(BATCH_SIZE=16, train_ratio=0.9, preprcoessing=False, transform=defualt_transform, root='data'):
     if preprcoessing:
         preprocessing_fun = ada_thr
     else:
         preprocessing_fun = None
 
-    train_config, val_config = get_train_val(train_ratio)
 
+    train_config, val_config = get_train_val(train_ratio)
     train_set = TextRecognitionDataset('train', config=train_config, preprocessing=preprocessing_fun, transform=transform)
     val_set = TextRecognitionDataset('train', config=val_config, preprocessing=preprocessing_fun, transform=transform)
     test_set = TextRecognitionDataset('test', preprocessing=preprocessing_fun, transform=transform)
