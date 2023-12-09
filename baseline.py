@@ -14,13 +14,13 @@ config = {
     'name'      : 'baseline',
 
 
-    'num_epochs': 2,
+    'num_epochs': 10,
     'batch_size': 64,
     'device'    : 'cuda:0',
 
     'checkpoint': False,
     'save_path' : 'checkpoints',
-    'log'       : False,
+    'log'       : True,
 }
 
 
