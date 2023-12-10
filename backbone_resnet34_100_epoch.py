@@ -12,10 +12,10 @@ warnings.filterwarnings('ignore')
 
 
 config = {
-    'name'      : 'backbone_resnet34_40_epoch',
+    'name'      : 'backbone_resnet34_100_epoch',
 
 
-    'num_epochs': 40,
+    'num_epochs': 100,
     'batch_size': 64,
     'device'    : 'cuda:0',
 
